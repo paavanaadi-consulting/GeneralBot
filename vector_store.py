@@ -46,8 +46,6 @@ class VectorStoreManager:
             persist_directory=settings.vector_db_path
         )
         
-        # Persist the vector store
-        self.vector_store.persist()
         logger.info(f"Vector store created and persisted to {settings.vector_db_path}")
         
         return self.vector_store
@@ -82,7 +80,6 @@ class VectorStoreManager:
         
         logger.info(f"Adding {len(documents)} documents to vector store")
         self.vector_store.add_documents(documents)
-        self.vector_store.persist()
         logger.info("Documents added and persisted")
     
     def similarity_search(self, query: str, k: Optional[int] = None) -> List[Document]:

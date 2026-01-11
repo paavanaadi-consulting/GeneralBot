@@ -196,10 +196,12 @@ def main():
     if passed == total:
         print("\n✓ All tests passed!")
         print("\nNext steps:")
-        print("1. Install dependencies: pip install -r requirements.txt")
-        print("2. Set OPENAI_API_KEY in .env file")
-        print("3. Ingest documents: python cli.py ingest ./data/documents")
-        print("4. Start the server: python main.py")
+        print("1. Create virtual environment: python -m venv venv")
+        print("2. Activate virtual environment: source venv/bin/activate (Linux/Mac) or venv\\Scripts\\activate (Windows)")
+        print("3. Install dependencies: pip install -r requirements.txt")
+        print("4. Set OPENAI_API_KEY in .env file")
+        print("5. Ingest documents: python cli.py ingest ./data/documents")
+        print("6. Start the server: python main.py")
         return 0
     else:
         print(f"\n✗ {total - passed} test(s) failed")

@@ -18,6 +18,11 @@ from logger import setup_logging
 logger = setup_logging()
 
 # Initialize FastAPI app
+# NOTE: For production deployment, consider adding:
+# - Request size limits (max_request_size)
+# - Rate limiting middleware
+# - Authentication/authorization
+# - HTTPS enforcement
 app = FastAPI(
     title="GeneralBot - AI Conversational Assistant",
     description="AI-powered conversational assistant with LLM and RAG capabilities",
@@ -25,9 +30,11 @@ app = FastAPI(
 )
 
 # Configure CORS
+# WARNING: In production, restrict allowed_origins to specific domains
+# Example: allow_origins=["https://yourdomain.com"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # TODO: Restrict in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
