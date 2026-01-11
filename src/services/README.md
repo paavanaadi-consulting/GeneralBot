@@ -8,3 +8,4 @@ Contains core business logic and integrations for the chatbot system.
 - `rag/` - Retrieval-Augmented Generation implementation
 - `vectordb/` - Vector database operations and management
 - `chat/` - Chat session management and conversation handling
+
