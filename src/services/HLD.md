@@ -23,41 +23,41 @@ High-level design for a production-grade RAG system on AWS with chatbot interfac
 
 ```mermaid
 graph TB
-    subgraph "User Layer"
+    subgraph User_Layer["User Layer"]
         User[User Browser]
     end
     
-    subgraph "AWS Cloud"
-        subgraph "Edge & CDN"
+    subgraph AWS_Cloud["AWS Cloud"]
+        subgraph Edge_CDN["Edge & CDN"]
             CF[CloudFront CDN]
             S3Web[S3 Static Website<br/>React Frontend]
         end
         
-        subgraph "Security & Auth"
+        subgraph Security_Auth["Security & Auth"]
             Cognito[AWS Cognito<br/>User Auth]
             WAF[AWS WAF<br/>Web Application Firewall]
         end
         
-        subgraph "VPC - Region: us-east-1"
-            subgraph "Public Subnet"
+        subgraph VPC["VPC - Region: us-east-1"]
+            subgraph Public_Subnet["Public Subnet"]
                 ALB[Application Load Balancer<br/>Internet-facing]
                 NAT[NAT Gateway]
             end
             
-            subgraph "Private Subnet - App Tier"
-                subgraph "EKS Cluster"
-                    subgraph "API Pods"
+            subgraph Private_App["Private Subnet - App Tier"]
+                subgraph EKS_Cluster["EKS Cluster"]
+                    subgraph API_Pods["API Pods"]
                         API1[FastAPI Pod 1]
                         API2[FastAPI Pod 2]
                         API3[FastAPI Pod 3]
                     end
                     
-                    subgraph "Worker Pods"
+                    subgraph Worker_Pods["Worker Pods"]
                         Worker1[Document Processor 1]
                         Worker2[Document Processor 2]
                     end
                     
-                    subgraph "Vector DB Pods"
+                    subgraph Vector_Pods["Vector DB Pods"]
                         Qdrant1[Qdrant Pod 1]
                         Qdrant2[Qdrant Pod 2]
                         Qdrant3[Qdrant Pod 3]
@@ -67,18 +67,18 @@ graph TB
                 ElastiCache[(ElastiCache Redis<br/>Query & Embedding Cache)]
             end
             
-            subgraph "Private Subnet - Data Tier"
+            subgraph Private_Data["Private Subnet - Data Tier"]
                 S3Docs[(S3 Bucket<br/>Document Storage)]
                 EBS[(EBS Volumes<br/>Qdrant Data)]
             end
             
-            subgraph "Message Queue"
+            subgraph Message_Queue["Message Queue"]
                 SQS[SQS Queue<br/>Document Processing]
             end
         end
         
-        subgraph "Monitoring Stack"
-            subgraph "EKS Monitoring Pods"
+        subgraph Monitoring_Stack["Monitoring Stack"]
+            subgraph EKS_Mon["EKS Monitoring Pods"]
                 Prometheus[Prometheus<br/>Metrics Collection]
                 Grafana[Grafana<br/>Visualization]
             end
@@ -87,12 +87,12 @@ graph TB
             XRay[X-Ray<br/>Distributed Tracing]
         end
         
-        subgraph "External Services"
+        subgraph External_Services["External Services"]
             OpenAI[OpenAI API<br/>Embeddings & LLM]
             Bedrock[AWS Bedrock<br/>Fallback LLM]
         end
         
-        subgraph "CI/CD"
+        subgraph CICD["CI/CD"]
             GitLab[GitLab CI/CD]
             ECR[Amazon ECR<br/>Container Registry]
         end
@@ -108,37 +108,76 @@ graph TB
     ALB --> API2
     ALB --> API3
     
-    API1 & API2 & API3 -->|Check Cache| ElastiCache
-    API1 & API2 & API3 -->|Query Vectors| Qdrant1
-    API1 & API2 & API3 -->|Query Vectors| Qdrant2
-    API1 & API2 & API3 -->|Query Vectors| Qdrant3
-    API1 & API2 & API3 -->|Get Embeddings/LLM| OpenAI
-    API1 & API2 & API3 -->|Fallback LLM| Bedrock
+    API1 -->|Check Cache| ElastiCache
+    API2 -->|Check Cache| ElastiCache
+    API3 -->|Check Cache| ElastiCache
     
-    API1 & API2 & API3 -->|Upload Docs| S3Docs
+    API1 -->|Query Vectors| Qdrant1
+    API2 -->|Query Vectors| Qdrant2
+    API3 -->|Query Vectors| Qdrant3
+    
+    API1 -->|Get Embeddings/LLM| OpenAI
+    API2 -->|Get Embeddings/LLM| OpenAI
+    API3 -->|Get Embeddings/LLM| OpenAI
+    
+    API1 -->|Fallback LLM| Bedrock
+    API2 -->|Fallback LLM| Bedrock
+    API3 -->|Fallback LLM| Bedrock
+    
+    API1 -->|Upload Docs| S3Docs
+    API2 -->|Upload Docs| S3Docs
+    API3 -->|Upload Docs| S3Docs
+    
     S3Docs -->|Trigger| SQS
     SQS --> Worker1
     SQS --> Worker2
     
-    Worker1 & Worker2 -->|Store Vectors| Qdrant1
-    Worker1 & Worker2 -->|Store Vectors| Qdrant2
-    Worker1 & Worker2 -->|Store Vectors| Qdrant3
-    Worker1 & Worker2 -->|Generate Embeddings| OpenAI
-    Worker1 & Worker2 -->|Cache| ElastiCache
+    Worker1 -->|Store Vectors| Qdrant1
+    Worker1 -->|Store Vectors| Qdrant2
+    Worker1 -->|Store Vectors| Qdrant3
+    Worker2 -->|Store Vectors| Qdrant1
+    Worker2 -->|Store Vectors| Qdrant2
+    Worker2 -->|Store Vectors| Qdrant3
     
-    Qdrant1 & Qdrant2 & Qdrant3 -->|Persist| EBS
+    Worker1 -->|Generate Embeddings| OpenAI
+    Worker2 -->|Generate Embeddings| OpenAI
+    Worker1 -->|Cache| ElastiCache
+    Worker2 -->|Cache| ElastiCache
     
-    API1 & API2 & API3 -->|Metrics| Prometheus
-    Worker1 & Worker2 -->|Metrics| Prometheus
-    Qdrant1 & Qdrant2 & Qdrant3 -->|Metrics| Prometheus
+    Qdrant1 -->|Persist| EBS
+    Qdrant2 -->|Persist| EBS
+    Qdrant3 -->|Persist| EBS
+    
+    API1 -->|Metrics| Prometheus
+    API2 -->|Metrics| Prometheus
+    API3 -->|Metrics| Prometheus
+    Worker1 -->|Metrics| Prometheus
+    Worker2 -->|Metrics| Prometheus
+    Qdrant1 -->|Metrics| Prometheus
+    Qdrant2 -->|Metrics| Prometheus
+    Qdrant3 -->|Metrics| Prometheus
+    
     Prometheus --> Grafana
     
-    API1 & API2 & API3 -->|Logs| CloudWatch
-    Worker1 & Worker2 -->|Logs| CloudWatch
-    API1 & API2 & API3 -->|Traces| XRay
+    API1 -->|Logs| CloudWatch
+    API2 -->|Logs| CloudWatch
+    API3 -->|Logs| CloudWatch
+    Worker1 -->|Logs| CloudWatch
+    Worker2 -->|Logs| CloudWatch
+    
+    API1 -->|Traces| XRay
+    API2 -->|Traces| XRay
+    API3 -->|Traces| XRay
     
     GitLab -->|Build & Push| ECR
-    ECR -->|Deploy| EKS Cluster
+    ECR -->|Deploy| API1
+    ECR -->|Deploy| API2
+    ECR -->|Deploy| API3
+    ECR -->|Deploy| Worker1
+    ECR -->|Deploy| Worker2
+    ECR -->|Deploy| Qdrant1
+    ECR -->|Deploy| Qdrant2
+    ECR -->|Deploy| Qdrant3
     
     style User fill:#e1f5ff
     style CF fill:#ff9900
@@ -146,7 +185,7 @@ graph TB
     style Cognito fill:#dd344c
     style WAF fill:#dd344c
     style ALB fill:#8c4fff
-    style EKS Cluster fill:#326ce5
+    style EKS_Cluster fill:#326ce5
     style ElastiCache fill:#c925d1
     style S3Docs fill:#569a31
     style SQS fill:#ff4f8b
