@@ -17,9 +17,85 @@ High-level design for a production-grade RAG system on AWS with chatbot interfac
 
 ---
 
+## Quick Overview
+
+### Very High-Level Flow
+
+```mermaid
+graph LR
+    subgraph Users
+        U[👤 Users]
+    end
+    
+    subgraph Frontend
+        UI[🖥️ React Web App<br/>CloudFront + S3]
+    end
+    
+    subgraph Backend
+        API[⚙️ FastAPI<br/>Kubernetes]
+        Cache[💾 Redis Cache]
+        VectorDB[🔍 Qdrant<br/>Vector Search]
+    end
+    
+    subgraph Storage
+        Docs[📁 S3<br/>Documents]
+        Queue[📬 SQS<br/>Processing Queue]
+    end
+    
+    subgraph AI
+        LLM[🤖 OpenAI API<br/>Embeddings + GPT]
+    end
+    
+    subgraph Monitoring
+        Mon[📊 Prometheus<br/>Grafana<br/>CloudWatch]
+    end
+    
+    U -->|1. Ask Question| UI
+    UI -->|2. API Request| API
+    API -->|3. Check Cache| Cache
+    Cache -.->|Cache Miss| API
+    API -->|4. Search Vectors| VectorDB
+    VectorDB -->|5. Return Chunks| API
+    API -->|6. Generate Answer| LLM
+    LLM -->|7. Response| API
+    API -->|8. Cache Result| Cache
+    API -->|9. Answer| UI
+    UI -->|10. Display| U
+    
+    U -.->|Upload Doc| UI
+    UI -.->|Store| Docs
+    Docs -.->|Trigger| Queue
+    Queue -.->|Process| API
+    API -.->|Embed & Index| VectorDB
+    
+    API & VectorDB & Cache --> Mon
+    
+    style U fill:#e1f5ff
+    style UI fill:#569a31
+    style API fill:#326ce5
+    style Cache fill:#c925d1
+    style VectorDB fill:#ff9900
+    style LLM fill:#10a37f
+    style Docs fill:#569a31
+    style Queue fill:#ff4f8b
+    style Mon fill:#f46800
+```
+
+**Key Components:**
+- 👤 **Users** - Access via web browser
+- 🖥️ **Frontend** - React app served via CloudFront CDN
+- ⚙️ **API** - FastAPI running on Kubernetes (EKS)
+- 💾 **Cache** - ElastiCache Redis for fast responses
+- 🔍 **Vector DB** - Qdrant for semantic search
+- 📁 **Storage** - S3 for documents, SQS for async processing
+- 🤖 **AI** - OpenAI for embeddings and text generation
+- 📊 **Monitoring** - Prometheus, Grafana, CloudWatch
+
+---
+
 ## Architecture Overview
 
-### High-Level Architecture
+### Detailed High-Level Architecture
 
 ```mermaid
 graph TB
