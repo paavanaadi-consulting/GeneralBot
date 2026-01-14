@@ -23,14 +23,14 @@
 
 ## Week 0: Setup (2 hours each)
 
-### Abhijeet
+### Abhijeet (AWS + Tools)
 - [ ] Create AWS account, set billing alerts ($50, $100, $150, $200)
 - [ ] Create IAM admin user, configure AWS CLI
 - [ ] Install: terraform, kubectl, helm, eksctl
 - [ ] Create S3 bucket for Terraform state
 - [ ] Create DynamoDB table for state locking
 
-### Ashoka
+### Ashoka (AI + Development Tools)
 - [ ] Create OpenAI account, get API key, set $50 usage limit
 - [ ] Test OpenAI embeddings and chat APIs
 - [ ] Install Docker, run Qdrant locally
@@ -43,9 +43,9 @@
 
 ---
 
-## Week 1: Infrastructure (4 hours each)
+## Week 1: Infrastructure & Backend Foundation (4 hours each)
 
-### Abhijeet
+### Abhijeet (DevOps: EKS + Monitoring)
 - [ ] Write Terraform for EKS cluster (default VPC, 2x t3.medium nodes)
 - [ ] Apply Terraform, configure kubectl
 - [ ] Add Prometheus Helm repo
@@ -54,7 +54,7 @@
 - [ ] Enable CloudWatch Container Insights
 - [ ] Create basic cluster dashboard (CPU, memory, pods)
 
-### Ashoka
+### Ashoka (DevOps: Vector DB + Backend)
 - [ ] Create k8s manifests for Qdrant (deployment, service, PVC 10GB)
 - [ ] Get cluster access from Abhijeet
 - [ ] Deploy Qdrant to EKS
@@ -65,9 +65,16 @@
 
 ---
 
-## Week 2: Storage & Backend (4 hours each)
+## Week 2: Storage, Cache & Document Processing (4 hours each)
 
-### Abhijeet
+### Abhijeet (Backend: Document Upload & Processing)
+- [ ] Implement upload endpoint (POST /upload)
+- [ ] Add S3 upload, text extraction, chunking (500 words, 50 overlap)
+- [ ] Implement embedding generation (batch mode)
+- [ ] Store vectors in Qdrant with metadata
+- [ ] Test end-to-end: upload → chunk → embed → store
+
+### Ashoka (DevOps: S3, Redis & Monitoring)
 - [ ] Add Terraform for S3 bucket (versioning, CORS)
 - [ ] Add Terraform for ElastiCache Redis (cache.t3.micro)
 - [ ] Apply Terraform
@@ -76,18 +83,19 @@
 - [ ] Create Qdrant dashboard in Grafana
 - [ ] Set up CloudWatch log groups, install Fluent Bit
 
-### Ashoka
-- [ ] Implement upload endpoint (POST /upload)
-- [ ] Add S3 upload, text extraction, chunking (500 words, 50 overlap)
-- [ ] Implement embedding generation (batch mode)
-- [ ] Store vectors in Qdrant with metadata
-- [ ] Test end-to-end: upload → chunk → embed → store
-
 ---
 
-## Week 3: Query & Deploy (4 hours each)
+## Week 3: Query API & Deployment (4 hours each)
 
-### Abhijeet
+### Abhijeet (Backend: Query Endpoint & Caching)
+- [ ] Implement query endpoint (POST /ask)
+- [ ] Generate query embedding, search Qdrant (top 3)
+- [ ] Build context, call OpenAI for answer
+- [ ] Add Redis client
+- [ ] Implement query cache (1hr TTL) and embedding cache (24hr TTL)
+- [ ] Test cache effectiveness
+
+### Ashoka (DevOps: Container & Kubernetes Deployment)
 - [ ] Write Dockerfile for FastAPI
 - [ ] Build image, create ECR repo, push to ECR
 - [ ] Write k8s manifests (deployment, service, configmap, secret)
@@ -96,27 +104,11 @@
 - [ ] Add Prometheus metrics endpoint to FastAPI
 - [ ] Create API dashboard (requests, latency, errors)
 
-### Ashoka
-- [ ] Implement query endpoint (POST /ask)
-- [ ] Generate query embedding, search Qdrant (top 3)
-- [ ] Build context, call OpenAI for answer
-- [ ] Add Redis client
-- [ ] Implement query cache (1hr TTL) and embedding cache (24hr TTL)
-- [ ] Test cache effectiveness
-
 ---
 
-## Week 4: Frontend (3-4 hours each)
+## Week 4: Frontend Development (3-4 hours each)
 
-### Abhijeet
-- [ ] Verify LoadBalancer, get external URL
-- [ ] Test API endpoints, configure CORS
-- [ ] Add Terraform for S3 frontend bucket
-- [ ] Enable static website hosting, public read policy
-- [ ] Apply Terraform, test with HTML file
-- [ ] Create business metrics dashboard in Grafana
-
-### Ashoka
+### Abhijeet (Frontend: React UI Components)
 - [ ] Create React app with create-react-app
 - [ ] Create components: Chat, Upload, Message
 - [ ] Create API service wrapper (axios)
@@ -125,18 +117,19 @@
 - [ ] Connect to API endpoints
 - [ ] Test locally, fix CORS issues
 
+### Ashoka (DevOps: Frontend Infrastructure & Monitoring)
+- [ ] Verify LoadBalancer, get external URL
+- [ ] Test API endpoints, configure CORS
+- [ ] Add Terraform for S3 frontend bucket
+- [ ] Enable static website hosting, public read policy
+- [ ] Apply Terraform, test with HTML file
+- [ ] Create business metrics dashboard in Grafana
+
 ---
 
-## Week 5: Deploy & Test (3-4 hours each)
+## Week 5: Deployment & Testing (3-4 hours each)
 
-### Abhijeet
-- [ ] Build React app (npm run build)
-- [ ] Upload to S3: `aws s3 sync build/ s3://bucket`
-- [ ] Test frontend URL
-- [ ] Review Terraform code, add tags
-- [ ] Document infrastructure setup
-
-### Ashoka
+### Abhijeet (Data Engineering: Testing & Validation)
 - [ ] Upload 5-10 test PDFs
 - [ ] Test queries (simple, complex, edge cases)
 - [ ] Verify cache working (check Redis, logs)
@@ -144,6 +137,13 @@
 - [ ] Monitor OpenAI costs
 - [ ] Document API endpoints
 - [ ] Create user guide
+
+### Ashoka (Frontend: Deploy & Infrastructure Review)
+- [ ] Build React app (npm run build)
+- [ ] Upload to S3: `aws s3 sync build/ s3://bucket`
+- [ ] Test frontend URL
+- [ ] Review Terraform code, add tags
+- [ ] Document infrastructure setup
 
 ---
 
@@ -279,13 +279,17 @@ Response: {
 
 | Week | Abhijeet | Ashoka |
 |------|----------|--------|
-| 0 | AWS setup, tools | OpenAI setup, Qdrant local |
-| 1 | EKS + monitoring | Qdrant on K8s, FastAPI |
-| 2 | S3 + Redis + logs | Upload + embedding |
-| 3 | Deploy FastAPI | Query + cache |
-| 4 | Frontend infra | React UI |
-| 5 | Deploy frontend | Testing |
-| 6 | Documentation | Documentation |
+| 0 | AWS setup (DevOps) | OpenAI + Qdrant setup (AI/Dev) |
+| 1 | EKS + Monitoring (DevOps) | Qdrant on K8s + FastAPI (DevOps/Backend) |
+| 2 | Upload + Embeddings (Backend/Data Eng) | S3 + Redis + Logs (DevOps) |
+| 3 | Query + Cache (Backend/Data Eng) | Deploy FastAPI (DevOps) |
+| 4 | React UI (Frontend) | Frontend Infra + Monitoring (DevOps/Frontend) |
+| 5 | Testing + Validation (Data Eng) | Deploy Frontend (DevOps/Frontend) |
+| 6 | Documentation (All) | Documentation (All) |
+
+**Learning Coverage:**
+- **Abhijeet:** DevOps (Weeks 0,1) → Backend/Data Eng (Weeks 2,3) → Frontend (Week 4) → Data Eng (Week 5)
+- **Ashoka:** AI/Dev Setup (Week 0) → DevOps/Backend (Week 1) → DevOps (Week 2) → DevOps (Week 3) → DevOps/Frontend (Week 4,5)
 
 ---
 
