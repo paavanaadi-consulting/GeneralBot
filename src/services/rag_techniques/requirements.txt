@@ -1,0 +1,55 @@
+# RAG Techniques Package - Core Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core LangChain
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-community>=0.0.20
+langchain-experimental>=0.0.50  # For semantic chunking
+
+# Vector Store
+faiss-cpu>=1.7.4
+
+# PDF Processing
+pypdf>=3.17.0
+pymupdf>=1.23.0
+
+# Data Processing & ML
+numpy>=1.24.0
+pydantic>=2.0.0
+scikit-learn>=1.3.0  # For clustering in RAPTOR
+scipy>=1.11.0  # For Dartboard RAG diversity calculations
+
+# Graph Processing
+networkx>=3.0  # For Graph RAG
+matplotlib>=3.7.0  # For graph visualization
+
+# Environment & Config
+python-dotenv>=1.0.0
+
+# Text Processing
+rank-bm25>=0.2.2
+
+# Optional: Development Dependencies
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+# black>=23.0.0
+# flake8>=6.0.0
+# mypy>=1.5.0
+
+# Optional: Evaluation
+# ragas>=0.0.22
+# deepeval>=0.20.0
+
+# Optional: Cloud Providers
+# langchain-aws>=0.0.1
+# langchain-google-genai>=0.0.6
+# langchain-anthropic>=0.0.1
+
+# Optional: Multi-modal RAG
+# pymupdf>=1.23.0  # For image extraction (already included above)
+# Pillow>=10.0.0  # For image processing
+# google-generativeai>=0.3.0  # For Gemini vision
+# byaldi>=0.0.3  # For ColPali
+# transformers>=4.35.0  # For ColPali
+# torch>=2.0.0  # For ColPali
