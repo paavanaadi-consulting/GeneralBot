@@ -328,3 +328,335 @@ This package is based on the RAG Techniques repository by Nir Diamant and contri
 - Documentation: [https://github.com/NirDiamant/RAG_Techniques](https://github.com/NirDiamant/RAG_Techniques)
 - Issues: [GitHub Issues](https://github.com/NirDiamant/RAG_Techniques/issues)
 - Discord: [Community Discord](https://discord.gg/cA6Aa4uyDX)
+
+---
+
+## Architecture & Class Diagrams
+
+### System Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        RAG Techniques Layer                          │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+        ┌───────────────────────────┼───────────────────────────┐
+        │                           │                           │
+        ▼                           ▼                           ▼
+┌───────────────┐         ┌──────────────────┐       ┌──────────────────┐
+│  Core Module  │         │ Techniques Module│       │  Utils Module    │
+├───────────────┤         ├──────────────────┤       ├──────────────────┤
+│ - BaseRAG     │────────▶│ - Adaptive       │       │ - Metrics        │
+│ - RAGConfig   │         │ - HyDE           │       │ - Validators     │
+│ - Embeddings  │         │ - MultiQuery     │       │ - Parsers        │
+│ - VectorStore │         │ - Reranking      │       │ - Formatters     │
+└───────────────┘         │ - ContextualComp │       └──────────────────┘
+                          │ - SelfRAG        │
+                          │ - RAPTOR         │
+                          └──────────────────┘
+```
+
+### Core Base Class Diagram
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                         RAGConfig                           │
+├────────────────────────────────────────────────────────────┤
+│ + chunk_size: int = 1000                                   │
+│ + chunk_overlap: int = 200                                 │
+│ + model_name: str = "gpt-3.5-turbo"                       │
+│ + temperature: float = 0.7                                 │
+│ + max_tokens: int = 500                                    │
+│ + n_retrieved: int = 4                                     │
+│ + embedding_model: str = "text-embedding-ada-002"         │
+└────────────────────────────────────────────────────────────┘
+                              │
+                              │ composition
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                         BaseRAG                              │
+├─────────────────────────────────────────────────────────────┤
+│ # config: RAGConfig                                         │
+│ # embeddings: OpenAIEmbeddings                             │
+│ # vectorstore: VectorStore                                 │
+│ # retriever: VectorStoreRetriever                          │
+│ # text_splitter: RecursiveCharacterTextSplitter           │
+├─────────────────────────────────────────────────────────────┤
+│ + __init__(pdf_path, content, config)                      │
+│ + setup_vectorstore(content: str): VectorStore             │
+│ + query(query_text: str): Dict[str, Any]                   │
+│ # _process_documents(content: str): List[Document]         │
+│ # _extract_pdf_content(pdf_path: str): str                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Adaptive Retrieval RAG - Complete Class Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         BaseRAG                              │
+├─────────────────────────────────────────────────────────────┤
+│ # config: RAGConfig                                         │
+│ # embeddings: OpenAIEmbeddings                             │
+│ # vectorstore: VectorStore                                 │
+│ # retriever: VectorStoreRetriever                          │
+└─────────────────────────────────────────────────────────────┘
+                              △
+                              │ inherits
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                  AdaptiveRetrievalRAG                        │
+├─────────────────────────────────────────────────────────────┤
+│ - llm: ChatOpenAI                                           │
+├─────────────────────────────────────────────────────────────┤
+│ + __init__(pdf_path, content, config)                      │
+│ + classify_query(query: str): QueryClassification          │
+│ + factual_retrieval(query: str, k: int): List[Document]    │
+│ + analytical_retrieval(query: str, k: int): List[Document] │
+│ + opinion_retrieval(query: str, k: int): List[Document]    │
+│ + contextual_retrieval(query: str, k: int): List[Document] │
+│ + query(query_text: str, force_strategy: str): Dict        │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              │ uses
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+┌──────────────────┐  ┌─────────────────┐  ┌──────────────────┐
+│ QueryCategory    │  │QueryClassification│ │ RelevanceScore   │
+│    (Enum)        │  │   (BaseModel)     │ │  (BaseModel)     │
+├──────────────────┤  ├─────────────────┤  ├──────────────────┤
+│ + FACTUAL        │  │+ category: str  │  │+ score: float    │
+│ + ANALYTICAL     │  │+ confidence:float│  │+ reasoning: str  │
+│ + OPINION        │  └─────────────────┘  └──────────────────┘
+│ + CONTEXTUAL     │
+└──────────────────┘
+```
+
+### Complete Class Hierarchy
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         BaseRAG                              │
+│                     (Abstract Base Class)                    │
+└─────────────────────────────────────────────────────────────┘
+                              △
+                              │
+            ┌─────────────────┼─────────────────┬──────────────┐
+            │                 │                 │              │
+            ▼                 ▼                 ▼              ▼
+┌──────────────────┐ ┌──────────────────┐ ┌──────────┐ ┌────────────┐
+│  HyDERAG         │ │ MultiQueryRAG    │ │ReRankingRAG│AdaptiveRAG │
+│  SimpleRAG       │ │ ContextualComp   │ │ SelfRAG   │ RAPTOR     │
+│  SemanticChunk   │ │ HierarchicalRAG  │ │ FusionRAG │ ReliableRAG│
+└──────────────────┘ └──────────────────┘ └──────────┘ └────────────┘
+```
+
+### Adaptive Retrieval Flow Diagram
+
+```
+User Query
+    │
+    ▼
+┌─────────────────────────┐
+│ AdaptiveRetrievalRAG    │
+│    .query()             │
+└───────────┬─────────────┘
+            │
+            ▼
+┌─────────────────────────┐
+│  classify_query()       │
+│  - Analyze query type   │
+│  - Return category      │
+│  - Confidence score     │
+└───────────┬─────────────┘
+            │
+            ▼
+      ┌─────┴─────┐
+      │ Strategy  │
+      │ Selection │
+      └─────┬─────┘
+            │
+    ┌───────┼───────┬───────────┬──────────────┐
+    │       │       │           │              │
+    ▼       ▼       ▼           ▼              ▼
+┌────────┐┌─────┐┌────────┐┌──────────┐┌──────────┐
+│Factual ││Analy││Opinion ││Contextual││ Fallback │
+│Strategy││tical││Strategy││ Strategy ││ Strategy │
+└───┬────┘│Strat│└───┬────┘└─────┬────┘└─────┬────┘
+    │     │egy  │    │           │           │
+    │     └──┬──┘    │           │           │
+    ▼        ▼       ▼           ▼           ▼
+┌─────────────────────────────────────────────────┐
+│        Vector Store Similarity Search           │
+└──────────────────────┬──────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────┐
+│  Post-Processing & Ranking (if applicable)      │
+└──────────────────────┬──────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────┐
+│            Context Assembly                      │
+└──────────────────────┬──────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────┐
+│      LLM Answer Generation (ChatOpenAI)         │
+└──────────────────────┬──────────────────────────┘
+                       │
+                       ▼
+                  Response Dict
+```
+
+### Sequence Diagram - Query Processing
+
+```
+User      AdaptiveRAG    Classifier    Strategy      VectorStore    LLM
+ │             │              │            │              │          │
+ │──query()──▶│              │            │              │          │
+ │             │              │            │              │          │
+ │             │──classify──▶│            │              │          │
+ │             │   query     │            │              │          │
+ │             │             │            │              │          │
+ │             │◀─category───│            │              │          │
+ │             │  confidence │            │              │          │
+ │             │             │            │              │          │
+ │             │──select────────────────▶│              │          │
+ │             │   strategy               │              │          │
+ │             │                          │              │          │
+ │             │                          │──enhance────▶│          │
+ │             │                          │  query       │          │
+ │             │                          │              │          │
+ │             │                          │──search─────▶│          │
+ │             │                          │              │          │
+ │             │                          │◀─docs(2k)────│          │
+ │             │                          │              │          │
+ │             │                          │──rerank────────────────▶│
+ │             │                          │              │          │
+ │             │                          │◀──scored_docs───────────│
+ │             │                          │              │          │
+ │             │◀──top_k_docs────────────│              │          │
+ │             │                          │              │          │
+ │             │──generate_answer────────────────────────────────▶│
+ │             │  (query + context)                                │
+ │             │                                                   │
+ │             │◀──────────answer──────────────────────────────────│
+ │             │                                                   │
+ │◀──response──│
+ │   dict      │
+```
+
+### Data Flow - Document Processing
+
+```
+┌──────────────┐
+│  PDF Upload  │
+└──────┬───────┘
+       │
+       ▼
+┌────────────────────┐
+│  PDF Extraction    │
+│  - PyPDF2/PyMuPDF  │
+└────────┬───────────┘
+         │
+         ▼
+┌────────────────────────────┐
+│  Text Chunking             │
+│  - RecursiveTextSplitter   │
+│  - chunk_size: 1000        │
+│  - chunk_overlap: 200      │
+└─────────┬──────────────────┘
+          │
+          ▼
+┌───────────────────────────┐
+│  Embedding Generation     │
+│  - OpenAI Ada-002         │
+│  - Dimension: 1536        │
+└──────────┬────────────────┘
+           │
+           ▼
+┌────────────────────────────┐
+│  Vector Storage            │
+│  - Chroma/Pinecone/Qdrant │
+│  - Index Creation          │
+│  - Metadata Storage        │
+└────────────────────────────┘
+```
+
+### Strategy Pattern Implementation
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              RetrievalStrategy (Interface)                   │
+├─────────────────────────────────────────────────────────────┤
+│ + retrieve(query: str, k: int): List[Document]             │
+└─────────────────────────────────────────────────────────────┘
+                              △
+                              │
+            ┌─────────────────┼─────────────────┬──────────────┐
+            │                 │                 │              │
+            ▼                 ▼                 ▼              ▼
+┌──────────────────┐ ┌──────────────────┐ ┌──────────┐ ┌────────────┐
+│FactualStrategy   │ │AnalyticalStrategy│ │ Opinion  │ │Contextual  │
+├──────────────────┤ ├──────────────────┤ │ Strategy │ │ Strategy   │
+│+ retrieve()      │ │+ retrieve()      │ ├──────────┤ ├────────────┤
+│  Steps:          │ │  Steps:          │ │+ retrieve│ │+ retrieve()│
+│  1. Enhance      │ │  1. Decompose    │ │  Steps:  │ │  Steps:    │
+│     query        │ │     query        │ │  1. MMR  │ │  1. Broad  │
+│  2. Search 2k    │ │  2. Multi-search │ │     search│ │     search │
+│  3. LLM rerank   │ │  3. Merge results│ │  2. Diverse│ │  2. More  │
+│  4. Return top-k │ │  4. Deduplicate  │ │     docs  │ │     docs   │
+└──────────────────┘ └──────────────────┘ └──────────┘ └────────────┘
+```
+
+### Module Dependencies
+
+```
+rag_techniques/
+│
+├── core/
+│   ├── base.py ─────────────────┐
+│   │   └── BaseRAG              │
+│   │                            │
+│   ├── config.py                │
+│   │   └── RAGConfig            │
+│   │                            │
+│   └── embeddings.py            │
+│       └── EmbeddingManager ────┤
+│                                │
+├── techniques/                  │
+│   │                            │
+│   ├── adaptive.py ◀────────────┤
+│   │   └── AdaptiveRetrievalRAG │
+│   │          │                 │
+│   │          ├─ uses ─────────▶│
+│   │          │                 │
+│   ├── hyde.py ◀────────────────┤
+│   │   └── HyDERAG              │
+│   │                            │
+│   ├── multi_query.py ◀─────────┤
+│   │   └── MultiQueryRAG        │
+│   │                            │
+│   ├── reranking.py ◀───────────┤
+│   │   └── ReRankingRAG         │
+│   │                            │
+│   ├── self_rag.py ◀────────────┤
+│   │   └── SelfRAG               │
+│   │                            │
+│   └── raptor.py ◀──────────────┘
+│       └── RAPTOR
+│
+└── utils/
+    ├── metrics.py
+    ├── validators.py
+    └── parsers.py
+
+External Dependencies:
+├── langchain ──────┐
+├── langchain_openai│
+├── openai          ├──▶ All RAG Classes
+├── chromadb        │
+└── pydantic ───────┘
+```
